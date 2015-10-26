@@ -1,0 +1,34 @@
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<BorderPane fx:id="borderPane" fx:controller="presentation.Controllers.Controller" xmlns:fx="http://javafx.com/fxml">
+    <top>
+        <VBox>
+            <MenuBar fx:id="menuBar">
+                <menus>
+                    <Menu text="File">
+                        <items>
+                            <MenuItem text="Import" onAction="#loadImage"/>
+                            <MenuItem text="Save"/>
+                        </items>
+                    </Menu>
+                </menus>
+            </MenuBar>
+            <HBox alignment="center" spacing="10">
+                <Button fx:id="hand" text="Hand" onMouseClicked="#setHandActive"></Button>
+                <Button fx:id="ellipsis" text="Ellipsis" onMouseClicked="#startDrawingEllipsis"></Button>
+                <Button fx:id="rectangle" text="Rectangle" onMouseClicked="#startDrawingRectangle"></Button>
+                <Button fx:id="polygon" text="Polygon"></Button>
+            </HBox>
+        </VBox>
+    </top>
+    <left></left>
+    <right>
+        <ListView fx:id="preview"></ListView>
+    </right>
+    <center>
+        <Pane fx:id="scrollPane">
+            <Pane fx:id="canvas"></Pane>
+            <!--<ImageView fx:id="imageView" onScroll="#handleScroll"></ImageView>-->
+        </Pane>
+    </center>
+</BorderPane>
