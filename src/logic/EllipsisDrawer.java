@@ -13,39 +13,39 @@ public class EllipsisDrawer implements Drawer {
     private static int idCounter = 1;
 
     private Pane canvas;
-    private Pane interactionPane;
+
     private Ellipse previewShape = getPreviewShape();
 
     private double initX;
     private double initY;
 
-    public EllipsisDrawer(Pane canvas, Pane interactionPane) {
+    public EllipsisDrawer(Pane canvas) {
         this.canvas = canvas;
-        this.interactionPane = interactionPane;
     }
 
     public void startDrawing() {
-        interactionPane.addEventHandler(MouseEvent.MOUSE_PRESSED, drawHandler);
-        interactionPane.addEventHandler(MouseEvent.MOUSE_DRAGGED, drawHandler);
-        interactionPane.addEventHandler(MouseEvent.MOUSE_RELEASED, drawHandler);
+        canvas.addEventHandler(MouseEvent.MOUSE_PRESSED, drawHandler);
+        canvas.addEventHandler(MouseEvent.MOUSE_DRAGGED, drawHandler);
+        canvas.addEventHandler(MouseEvent.MOUSE_RELEASED, drawHandler);
     }
 
     public void stopDrawing() {
-        interactionPane.removeEventHandler(MouseEvent.MOUSE_PRESSED, drawHandler);
-        interactionPane.removeEventHandler(MouseEvent.MOUSE_DRAGGED, drawHandler);
-        interactionPane.removeEventHandler(MouseEvent.MOUSE_RELEASED, drawHandler);
+        canvas.removeEventHandler(MouseEvent.MOUSE_PRESSED, drawHandler);
+        canvas.removeEventHandler(MouseEvent.MOUSE_DRAGGED, drawHandler);
+        canvas.removeEventHandler(MouseEvent.MOUSE_RELEASED, drawHandler);
     }
 
     private EventHandler<MouseEvent> drawHandler = new EventHandler<MouseEvent>() {
         @Override
         public void handle(MouseEvent mouseEvent) {
-            if (mouseEvent.getEventType() == MouseEvent.MOUSE_PRESSED) {
+            if (mouseEvent.getEventType() == MouseEvent.MOUSE_PRESSED && mouseEvent.isPrimaryButtonDown()) {
                 previewShape.setCenterX(mouseEvent.getX());
                 previewShape.setCenterY(mouseEvent.getY());
                 canvas.getChildren().add(previewShape);
                 initX = mouseEvent.getX();
                 initY = mouseEvent.getY();
-            } else if (mouseEvent.getEventType() == MouseEvent.MOUSE_DRAGGED) {
+                mouseEvent.consume();
+            } else if (mouseEvent.getEventType() == MouseEvent.MOUSE_DRAGGED && mouseEvent.isPrimaryButtonDown()) {
                 double mouseX = mouseEvent.getX();
                 double mouseY = mouseEvent.getY();
 
@@ -57,7 +57,7 @@ public class EllipsisDrawer implements Drawer {
 //                    previewShape.setY(mouseY);
 //                }
                 previewShape.setRadiusY(Math.abs(initY - mouseY));
-
+                mouseEvent.consume();
             } else if (mouseEvent.getEventType() == MouseEvent.MOUSE_RELEASED) {
                 // Clone the rectangle
                 Ellipse r = getShape();
@@ -67,8 +67,10 @@ public class EllipsisDrawer implements Drawer {
                 r.setRadiusY(previewShape.getRadiusY());
                 canvas.getChildren().add(r);
                 canvas.getChildren().remove(previewShape);
+                previewShape.setRadiusX(0);
+                previewShape.setRadiusY(0);
+                mouseEvent.consume();
             }
-            mouseEvent.consume();
         }
     };
 

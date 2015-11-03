@@ -1,4 +1,5 @@
 <?import javafx.scene.control.*?>
+<?import javafx.scene.image.ImageView?>
 <?import javafx.scene.layout.*?>
 <BorderPane fx:id="borderPane" fx:controller="presentation.Controllers.Controller" xmlns:fx="http://javafx.com/fxml">
     <top>
@@ -17,7 +18,7 @@
                 <Button fx:id="hand" text="Hand" onMouseClicked="#setHandActive"></Button>
                 <Button fx:id="ellipsis" text="Ellipsis" onMouseClicked="#startDrawingEllipsis"></Button>
                 <Button fx:id="rectangle" text="Rectangle" onMouseClicked="#startDrawingRectangle"></Button>
-                <Button fx:id="polygon" text="Polygon"></Button>
+                <Button fx:id="polygon" text="Polygon" onMouseClicked="#startDrawingPolygon"></Button>
             </HBox>
         </VBox>
     </top>
@@ -26,9 +27,15 @@
         <ListView fx:id="preview"></ListView>
     </right>
     <center>
-        <Pane fx:id="scrollPane">
-            <Pane fx:id="canvas"></Pane>
-            <!--<ImageView fx:id="imageView" onScroll="#handleScroll"></ImageView>-->
-        </Pane>
+        <ScrollPane fx:id="scrollPane" onMousePressed="#startPanning" onMouseReleased="#stopPanning"
+                    onScroll="#handleScroll">
+            <content>
+                <Pane fx:id="canvasWrapper">
+                    <ImageView fx:id="imageView" preserveRatio="true"
+                               pickOnBounds="true"></ImageView>
+                    <Pane fx:id="canvas"></Pane>
+                </Pane>
+            </content>
+        </ScrollPane>
     </center>
 </BorderPane>
