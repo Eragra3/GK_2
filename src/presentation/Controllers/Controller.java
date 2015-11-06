@@ -18,6 +18,7 @@ import javafx.scene.input.ScrollEvent;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.Pane;
 import javafx.scene.transform.Scale;
+import javafx.scene.transform.Transform;
 import javafx.stage.FileChooser;
 import logic.Drawer;
 import logic.EllipsisDrawer;
@@ -88,10 +89,7 @@ public class Controller implements Initializable {
         canvas.maxHeightProperty().bind(imageHeight);
         //
         center();
-//        scrollPane.addEventHandler(ScrollEvent.ANY, event -> {
-//            center();
-//            event.consume();
-//        });
+        scrollPane.addEventFilter(ScrollEvent.SCROLL, this::handleScroll);
         canvasWrapper.prefHeightProperty().bind(imageView.fitHeightProperty());
         canvasWrapper.prefWidthProperty().bind(imageView.fitWidthProperty());
     }
@@ -109,9 +107,9 @@ public class Controller implements Initializable {
                 Image image = SwingFXUtils.toFXImage(bufferedImage, null);
                 imageView.setImage(image);
                 resetImageView(imageView);
-                Bounds imageViewBounds = imageView.getBoundsInParent();
-                imageView.setTranslateX(scrollPane.getWidth() / 2 - imageViewBounds.getWidth() / 2);
-                imageView.setTranslateY(scrollPane.getHeight() / 2 - imageViewBounds.getHeight() / 2);
+//                Bounds imageViewBounds = imageView.getBoundsInParent();
+//                imageView.setTranslateX(scrollPane.getWidth() / 2 - imageViewBounds.getWidth() / 2);
+//                imageView.setTranslateY(scrollPane.getHeight() / 2 - imageViewBounds.getHeight() / 2);
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -148,20 +146,23 @@ public class Controller implements Initializable {
     private static final double MIN_SCALE = .1d;
 
     public void handleScroll(ScrollEvent event) {
-        double delta = 1.1;
+        if (event.isControlDown()) {
 
-        double scale = imageView.getScaleX(); // currently we only use X, same value is used for Y
-        double oldScale = scale;
+            double delta = 1.1;
 
-        if (event.getDeltaY() < 0)
-            scale /= delta;
-        else
-            scale *= delta;
+            double scale = imageView.getScaleX(); // currently we only use X, same value is used for Y
+//            double oldScale = scale;
 
-        scale = clamp(scale, MIN_SCALE, MAX_SCALE);
+            if (event.getDeltaY() < 0)
+                scale /= delta;
+            else
+                scale *= delta;
 
-        imageView.setScaleX(scale);
-        imageView.setScaleY(scale);
+            scale = clamp(scale, MIN_SCALE, MAX_SCALE);
+
+            imageView.getTransforms().add(Transform.scale(scale, scale));
+//        imageView.setScaleX(scale);
+//        imageView.setScaleY(scale);
 
 //        Bounds imageViewBounds = imageView.getBoundsInParent();
 //        double verticalPadding;
@@ -169,7 +170,8 @@ public class Controller implements Initializable {
 //
 //        horizontalPadding = imageViewBounds.getWidth() / 2 - scrollPane.getWidth() / 2;
 //        verticalPadding = imageViewBounds.getHeight() / 2 - scrollPane.getHeight() / 2;
-        event.consume();
+            event.consume();
+        }
     }
 
     public void startPanning(MouseEvent mouseEvent) {
