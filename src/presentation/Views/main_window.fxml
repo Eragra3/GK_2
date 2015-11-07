@@ -9,9 +9,15 @@
                 <menus>
                     <Menu text="File">
                         <items>
-                            <MenuItem text="Import" onAction="#loadImage"/>
-                            <MenuItem text="Save"/>
+                            <MenuItem text="Load image" onAction="#loadImage"/>
+                            <SeparatorMenuItem></SeparatorMenuItem>
+                            <MenuItem text="Import" onAction="#importShapes"/>
+                            <MenuItem text="Export" onAction="#exportShapes"/>
                         </items>
+                    </Menu>
+                    <Menu text="Edit">
+                        <MenuItem text="Clear" onAction="#deleteAllShapes"/>
+
                     </Menu>
                 </menus>
             </MenuBar>
@@ -25,7 +31,7 @@
     </top>
     <left></left>
     <right>
-        <ListView fx:id="preview"></ListView>
+        <ListView fx:id="listView" ></ListView>
     </right>
     <center>
         <ScrollPane fx:id="scrollPane" onMousePressed="#startPanning" onMouseReleased="#stopPanning">

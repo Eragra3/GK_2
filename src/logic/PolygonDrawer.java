@@ -1,5 +1,6 @@
 package logic;
 
+import javafx.collections.ObservableList;
 import javafx.event.EventHandler;
 import javafx.geometry.Point2D;
 import javafx.scene.input.MouseButton;
@@ -14,13 +15,15 @@ import javafx.scene.shape.Polyline;
  */
 public class PolygonDrawer implements Drawer {
     private static int idCounter = 1;
+private ObservableList addedShapes;
 
     private Pane canvas;
     private Polyline previewShape = getPreviewShape();
 
 
-    public PolygonDrawer(Pane canvas) {
+    public PolygonDrawer(Pane canvas, ObservableList addedShapes) {
         this.canvas = canvas;
+        this.addedShapes = addedShapes;
     }
 
     public void startDrawing() {
@@ -29,12 +32,13 @@ public class PolygonDrawer implements Drawer {
 
     public void stopDrawing() {
         canvas.removeEventHandler(MouseEvent.MOUSE_PRESSED, drawHandler);
+        previewShape.getPoints().clear();
     }
 
     private EventHandler<MouseEvent> drawHandler = new EventHandler<MouseEvent>() {
         @Override
         public void handle(MouseEvent mouseEvent) {
-            if (mouseEvent.getEventType() == MouseEvent.MOUSE_PRESSED && mouseEvent.isPrimaryButtonDown()) {
+            if (mouseEvent.getEventType() == MouseEvent.MOUSE_PRESSED && mouseEvent.getButton() != MouseButton.MIDDLE) {
                 if (!previewShape.isVisible()) {
                     previewShape.setVisible(true);
                     canvas.getChildren().add(previewShape);
@@ -55,7 +59,7 @@ public class PolygonDrawer implements Drawer {
                         previewShape.setVisible(false);
                         previewShape.getPoints().clear();
 
-                        canvas.getChildren().add(shape);
+                        addedShapes.add(shape);
                         canvas.getChildren().remove(previewShape);
                         return;
                     }
@@ -71,9 +75,9 @@ public class PolygonDrawer implements Drawer {
 
     private Polygon getShape() {
         Polygon shape = new Polygon();
-        shape.setFill(Color.BLUE);
-        shape.setId(String.valueOf(idCounter++));
-        shape.setOpacity(0.2);
+        shape.setFill(Drawer.mainColor);
+        shape.setId("Polygon " + String.valueOf(idCounter++));
+        shape.setOpacity(shapeOpacity);
         shape.setStroke(Color.BLACK);
         return shape;
     }
@@ -84,5 +88,9 @@ public class PolygonDrawer implements Drawer {
         shape.getStrokeDashArray().addAll(2.0, 2.0);
         shape.setVisible(false);
         return shape;
+    }
+
+    public static void resetIdCounter() {
+        idCounter = 1;
     }
 }

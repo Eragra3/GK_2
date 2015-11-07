@@ -1,40 +1,58 @@
 package presentation.Controllers;
 
 import common.Helpers;
+import fileManager.FileManager;
+import fileManager.IFileManager;
+import fileManager.Response;
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.SimpleDoubleProperty;
+import javafx.collections.FXCollections;
+import javafx.collections.ListChangeListener;
+import javafx.collections.ObservableList;
 import javafx.embed.swing.SwingFXUtils;
 import javafx.fxml.FXML;
-import javafx.fxml.Initializable;
 import javafx.geometry.Bounds;
 import javafx.scene.Cursor;
 import javafx.scene.Scene;
+import javafx.scene.control.Alert;
+import javafx.scene.control.ListCell;
+import javafx.scene.control.ListView;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import javafx.scene.input.KeyCode;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.input.ScrollEvent;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.Pane;
+import javafx.scene.paint.Color;
+import javafx.scene.shape.Shape;
 import javafx.scene.transform.Scale;
 import javafx.scene.transform.Transform;
 import javafx.stage.FileChooser;
 import logic.Drawer;
-import logic.EllipsisDrawer;
+import logic.EllipseDrawer;
 import logic.PolygonDrawer;
 import logic.RectangleDrawer;
 import org.fxmisc.easybind.EasyBind;
 import org.fxmisc.easybind.monadic.MonadicBinding;
 
 import javax.imageio.ImageIO;
+import javax.xml.bind.annotation.XmlRootElement;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 
-public class Controller implements Initializable {
+@XmlRootElement(namespace = "presentation.Controllers")
+public class Controller {
 
     final FileChooser fileChooser = new FileChooser();
+    final IFileManager xmlFileManager = FileManager.getInstance();
+
+    ObservableList<Shape> addedShapes = FXCollections.observableArrayList();
+
     @FXML
     BorderPane borderPane;
     @FXML
@@ -45,14 +63,16 @@ public class Controller implements Initializable {
     ScrollPane scrollPane;
     @FXML
     Pane canvasWrapper;
+    @FXML
+    ListView listView;
 
     Scene scene;
 
     //Drawers
-    RectangleDrawer rectangleDrawer;
-    EllipsisDrawer ellipsisDrawer;
-    PolygonDrawer polygonDrawer;
-    Drawer currentDrawer;
+    private RectangleDrawer rectangleDrawer;
+    private EllipseDrawer ellipseDrawer;
+    private PolygonDrawer polygonDrawer;
+    private Drawer currentDrawer;
 
     //Binding properties
     private DoubleProperty imageScale = new SimpleDoubleProperty(100);
@@ -62,14 +82,70 @@ public class Controller implements Initializable {
     public Controller() {
     }
 
-    public void initialize(java.net.URL location, java.util.ResourceBundle resources) {
-        this.rectangleDrawer = new RectangleDrawer(canvas);
-        this.ellipsisDrawer = new EllipsisDrawer(canvas);
-        this.polygonDrawer = new PolygonDrawer(canvas);
+    public void initialize() {
+        rectangleDrawer = new RectangleDrawer(canvas, addedShapes);
+        ellipseDrawer = new EllipseDrawer(canvas, addedShapes);
+        polygonDrawer = new PolygonDrawer(canvas, addedShapes);
         currentDrawer = null;
 
-        Scale scale = new Scale();
+        addedShapes.addListener((ListChangeListener<Shape>) c -> {
+            while (c.next()) {
+                if (c.wasRemoved()) {
+                    for (Shape item : c.getRemoved())
+                        canvas.getChildren().remove(item);
+                } else if (c.wasAdded()) {
+                    for (Shape item : c.getAddedSubList())
+                        canvas.getChildren().add(item);
+                }
+            }
+        });
 
+        listView.setItems(addedShapes);
+        listView.setCellFactory(list -> {
+            final ListCell<Shape> cell = new ShapeCell();
+            cell.setOnMouseEntered(event -> {
+                final Object selectedItem = listView.getSelectionModel().getSelectedItem();
+                final Shape shape = cell.getItem();
+                if (shape != null && cell.isHover() && selectedItem != shape) {
+                    shape.setFill(Color.ORANGE);
+                    shape.setOpacity(1);
+                }
+            });
+            cell.setOnMouseExited(event -> {
+                final Shape shape = cell.getItem();
+                if (shape != null && listView.getSelectionModel().getSelectedItem() != shape) {
+                    shape.setFill(Drawer.mainColor);
+                    shape.setOpacity(Drawer.shapeOpacity);
+                }
+            });
+            cell.setOnMousePressed(event -> {
+                final Object selectedItem = listView.getSelectionModel().getSelectedItem();
+                if (selectedItem != null) {
+                    addedShapes.forEach(shape -> {
+                        shape.setFill(Drawer.mainColor);
+                        shape.setOpacity(Drawer.shapeOpacity);
+                    });
+                    ((Shape) selectedItem).setFill(Color.RED);
+                    ((Shape) selectedItem).setOpacity(1);
+                }
+            });
+            listView.setOnKeyReleased(event -> {
+                final Object selectedItem = listView.getSelectionModel().getSelectedItem();
+                if (event.getCode() == KeyCode.DELETE) {
+                    addedShapes.remove(selectedItem);
+                } else if ((event.getCode() == KeyCode.UP || event.getCode() == KeyCode.DOWN) && selectedItem != null) {
+                    addedShapes.forEach(shape -> {
+                        shape.setFill(Drawer.mainColor);
+                        shape.setOpacity(Drawer.shapeOpacity);
+                    });
+                    ((Shape) selectedItem).setFill(Color.RED);
+                    ((Shape) selectedItem).setOpacity(1);
+                }
+            });
+            return cell;
+        });
+
+        Scale scale = new Scale();
         //binding properties
         MonadicBinding<Double> maxWidth = EasyBind.map(imageView.boundsInParentProperty(), Bounds::getWidth);
         MonadicBinding<Double> maxHeight = EasyBind.map(imageView.boundsInParentProperty(), Bounds::getHeight);
@@ -88,10 +164,23 @@ public class Controller implements Initializable {
         canvas.minHeightProperty().bind(imageHeight);
         canvas.maxHeightProperty().bind(imageHeight);
         //
-        center();
+//        center();
         scrollPane.addEventFilter(ScrollEvent.SCROLL, this::handleScroll);
         canvasWrapper.prefHeightProperty().bind(imageView.fitHeightProperty());
         canvasWrapper.prefWidthProperty().bind(imageView.fitWidthProperty());
+    }
+
+    static class ShapeCell extends ListCell<Shape> {
+
+        @Override
+        public void updateItem(Shape item, boolean empty) {
+            super.updateItem(item, empty);
+            if (item != null) {
+                setText(item.getId());
+            } else {
+                setText("");
+            }
+        }
     }
 
     public void setScene(Scene scene) {
@@ -114,6 +203,54 @@ public class Controller implements Initializable {
                 e.printStackTrace();
             }
         }
+    }
+
+    @FXML
+    public void importShapes() {
+        Response response = xmlFileManager.loadShapes("shapes.dat");
+        if (response.success) {
+//            addedShapes.clear();
+            addedShapes.addAll((ArrayList<Shape>)response.content);
+
+            Alert alert = new Alert(Alert.AlertType.INFORMATION);
+            alert.setTitle("Import");
+            alert.setHeaderText("Success");
+            alert.setContentText(response.message);
+            alert.showAndWait();
+        } else {
+            Alert alert = new Alert(Alert.AlertType.ERROR);
+            alert.setTitle("Import");
+            alert.setHeaderText("Error");
+            alert.setContentText(response.message);
+            alert.showAndWait();
+        }
+    }
+
+    @FXML
+    public void exportShapes() {
+        Response response = xmlFileManager.saveShapes(addedShapes, "shapes.dat");
+        if (response.success) {
+            Alert alert = new Alert(Alert.AlertType.INFORMATION);
+            alert.setTitle("Export");
+            alert.setContentText(response.message);
+            alert.setHeaderText("Success");
+            alert.showAndWait();
+        } else {
+            Alert alert = new Alert(Alert.AlertType.ERROR);
+            alert.setTitle("Export");
+            alert.setContentText(response.message);
+            alert.setHeaderText("Error");
+            alert.showAndWait();
+        }
+    }
+
+    @FXML
+    public void deleteAllShapes() {
+        addedShapes.clear();
+        canvas.getChildren().clear();
+        EllipseDrawer.resetIdCounter();
+        PolygonDrawer.resetIdCounter();
+        RectangleDrawer.resetIdCounter();
     }
 
     private void center() {
@@ -219,8 +356,8 @@ public class Controller implements Initializable {
             currentDrawer.stopDrawing();
 
         scene.setCursor(Cursor.CROSSHAIR);
-        ellipsisDrawer.startDrawing();
-        currentDrawer = ellipsisDrawer;
+        ellipseDrawer.startDrawing();
+        currentDrawer = ellipseDrawer;
     }
 
     @FXML
