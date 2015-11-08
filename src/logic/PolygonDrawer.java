@@ -7,17 +7,22 @@ import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
+import javafx.scene.shape.Ellipse;
 import javafx.scene.shape.Polygon;
 import javafx.scene.shape.Polyline;
+import javafx.scene.shape.Shape;
+
+import java.util.ArrayList;
 
 /**
  * Created by bider_000 on 26.10.2015.
  */
 public class PolygonDrawer implements Drawer {
     private static int idCounter = 1;
-private ObservableList addedShapes;
+    private ObservableList addedShapes;
 
     private Pane canvas;
+    private ArrayList<Shape> previewPoints = new ArrayList(20);
     private Polyline previewShape = getPreviewShape();
 
 
@@ -44,10 +49,14 @@ private ObservableList addedShapes;
                     canvas.getChildren().add(previewShape);
                 }
 
-                Point2D mouse = new Point2D(mouseEvent.getSceneX(), mouseEvent.getSceneY());
+                Shape previewPoint = getPreviewPoint(mouseEvent.getX(), mouseEvent.getY());
+                canvas.getChildren().add(previewPoint);
+                previewPoints.add(previewPoint);
+
 
                 int size = previewShape.getPoints().size();
                 if (size > 2) {
+                    Point2D mouse = new Point2D(mouseEvent.getSceneX(), mouseEvent.getSceneY());
                     Point2D first = canvas.localToScene(previewShape.getPoints().get(0),
                             previewShape.getPoints().get(1));
                     Point2D last = canvas.localToScene(previewShape.getPoints().get(size - 2),
@@ -58,6 +67,9 @@ private ObservableList addedShapes;
 
                         previewShape.setVisible(false);
                         previewShape.getPoints().clear();
+
+                        canvas.getChildren().removeAll(previewPoints);
+                        previewPoints.clear();
 
                         addedShapes.add(shape);
                         canvas.getChildren().remove(previewShape);
@@ -88,6 +100,20 @@ private ObservableList addedShapes;
         shape.getStrokeDashArray().addAll(2.0, 2.0);
         shape.setVisible(false);
         return shape;
+    }
+
+    private Shape getPreviewPoint(double x, double y) {
+        Ellipse preview = new Ellipse();
+        preview.setCenterX(x);
+        preview.setCenterY(y);
+        preview.setRadiusX(4);
+        preview.setRadiusY(4);
+        preview.setFill(Color.WHITE);
+        preview.setOpacity(1);
+        preview.setStroke(Color.BLACK);
+        preview.getStrokeDashArray().add(new Double(2));
+        preview.setVisible(true);
+        return preview;
     }
 
     public static void resetIdCounter() {

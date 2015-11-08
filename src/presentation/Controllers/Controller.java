@@ -20,10 +20,7 @@ import javafx.scene.control.ListView;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
-import javafx.scene.input.KeyCode;
-import javafx.scene.input.MouseButton;
-import javafx.scene.input.MouseEvent;
-import javafx.scene.input.ScrollEvent;
+import javafx.scene.input.*;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
@@ -168,6 +165,14 @@ public class Controller {
         scrollPane.addEventFilter(ScrollEvent.SCROLL, this::handleScroll);
         canvasWrapper.prefHeightProperty().bind(imageView.fitHeightProperty());
         canvasWrapper.prefWidthProperty().bind(imageView.fitWidthProperty());
+
+        borderPane.addEventFilter(KeyEvent.KEY_PRESSED, event -> {
+            if (event.getCode() == KeyCode.ESCAPE) {
+                if (currentDrawer != null)
+                    currentDrawer.stopDrawing();
+                scene.setCursor(Cursor.DEFAULT);
+            }
+        });
     }
 
     static class ShapeCell extends ListCell<Shape> {
@@ -210,7 +215,7 @@ public class Controller {
         Response response = xmlFileManager.loadShapes("shapes.dat");
         if (response.success) {
 //            addedShapes.clear();
-            addedShapes.addAll((ArrayList<Shape>)response.content);
+            addedShapes.addAll((ArrayList<Shape>) response.content);
 
             Alert alert = new Alert(Alert.AlertType.INFORMATION);
             alert.setTitle("Import");
