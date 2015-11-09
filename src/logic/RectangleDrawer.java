@@ -80,9 +80,9 @@ public class RectangleDrawer implements Drawer {
 
     private Rectangle getShape() {
         Rectangle shape = new Rectangle();
-        shape.setFill(Drawer.mainColor);
+        shape.setFill(Configuration.getMainColor());
         shape.setId("Rectangle " + String.valueOf(idCounter++));
-        shape.setOpacity(shapeOpacity);
+        shape.setOpacity(Configuration.getShapeOpacity());
         shape.setStroke(Color.BLACK);
         return shape;
     }

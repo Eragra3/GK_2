@@ -14,24 +14,19 @@ import javafx.fxml.FXML;
 import javafx.geometry.Bounds;
 import javafx.scene.Cursor;
 import javafx.scene.Scene;
-import javafx.scene.control.Alert;
-import javafx.scene.control.ListCell;
-import javafx.scene.control.ListView;
-import javafx.scene.control.ScrollPane;
+import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.*;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
+import javafx.scene.paint.Paint;
 import javafx.scene.shape.Shape;
 import javafx.scene.transform.Scale;
 import javafx.scene.transform.Transform;
 import javafx.stage.FileChooser;
-import logic.Drawer;
-import logic.EllipseDrawer;
-import logic.PolygonDrawer;
-import logic.RectangleDrawer;
+import logic.*;
 import org.fxmisc.easybind.EasyBind;
 import org.fxmisc.easybind.monadic.MonadicBinding;
 
@@ -62,6 +57,8 @@ public class Controller {
     Pane canvasWrapper;
     @FXML
     ListView listView;
+    @FXML
+    ColorPicker colorPicker;
 
     Scene scene;
 
@@ -75,6 +72,15 @@ public class Controller {
     private DoubleProperty imageScale = new SimpleDoubleProperty(100);
     private DoubleProperty imageWidth;
     private DoubleProperty imageHeight;
+
+    //node highlight
+    private Shape selectedShape;
+    private Paint selectedShapeColor;
+    private double selectedShapeOpacity;
+
+    private Shape hoveredShape;
+    private Paint hoveredShapeColor;
+    private double hoveredShapeOpacity;
 
     public Controller() {
     }
@@ -100,30 +106,42 @@ public class Controller {
         listView.setItems(addedShapes);
         listView.setCellFactory(list -> {
             final ListCell<Shape> cell = new ShapeCell();
+
             cell.setOnMouseEntered(event -> {
                 final Object selectedItem = listView.getSelectionModel().getSelectedItem();
                 final Shape shape = cell.getItem();
                 if (shape != null && cell.isHover() && selectedItem != shape) {
+                    restoreHoveredShapeProperties();
+
+                    hoveredShape = shape;
+                    hoveredShapeColor = shape.getFill();
+                    hoveredShapeOpacity = shape.getOpacity();
+
                     shape.setFill(Color.ORANGE);
                     shape.setOpacity(1);
                 }
             });
             cell.setOnMouseExited(event -> {
+                final Object selectedItem = listView.getSelectionModel().getSelectedItem();
                 final Shape shape = cell.getItem();
-                if (shape != null && listView.getSelectionModel().getSelectedItem() != shape) {
-                    shape.setFill(Drawer.mainColor);
-                    shape.setOpacity(Drawer.shapeOpacity);
+                if (shape != null && selectedItem != shape) {
+                    restoreHoveredShapeProperties();
                 }
             });
             cell.setOnMousePressed(event -> {
                 final Object selectedItem = listView.getSelectionModel().getSelectedItem();
                 if (selectedItem != null) {
-                    addedShapes.forEach(shape -> {
-                        shape.setFill(Drawer.mainColor);
-                        shape.setOpacity(Drawer.shapeOpacity);
-                    });
-                    ((Shape) selectedItem).setFill(Color.RED);
-                    ((Shape) selectedItem).setOpacity(1);
+                    restoreSelectedShapeProperties();
+
+                    final Shape shape = ((Shape) selectedItem);
+
+                    selectedShape = shape;
+                    //you always hover before click
+                    selectedShapeColor = hoveredShapeColor;
+                    selectedShapeOpacity = hoveredShapeOpacity;
+
+                    shape.setFill(Color.RED);
+                    shape.setOpacity(1);
                 }
             });
             listView.setOnKeyReleased(event -> {
@@ -131,12 +149,27 @@ public class Controller {
                 if (event.getCode() == KeyCode.DELETE) {
                     addedShapes.remove(selectedItem);
                 } else if ((event.getCode() == KeyCode.UP || event.getCode() == KeyCode.DOWN) && selectedItem != null) {
-                    addedShapes.forEach(shape -> {
-                        shape.setFill(Drawer.mainColor);
-                        shape.setOpacity(Drawer.shapeOpacity);
-                    });
-                    ((Shape) selectedItem).setFill(Color.RED);
-                    ((Shape) selectedItem).setOpacity(1);
+                    if (selectedShape.equals(hoveredShape)) {
+                        selectedShape.setFill(Color.ORANGE);
+                        selectedShape.setOpacity(1);
+                    } else
+                        restoreSelectedShapeProperties();
+
+                    final Shape shape = ((Shape) selectedItem);
+
+                    selectedShape = shape;
+                    //you sometimes hover before/while using arrow keys
+                    if (selectedShape.equals(hoveredShape)) {
+                        selectedShapeColor = hoveredShapeColor;
+                        selectedShapeOpacity = hoveredShapeOpacity;
+                    } else {
+                        selectedShapeColor = shape.getFill();
+                        selectedShapeOpacity = shape.getOpacity();
+                    }
+
+
+                    shape.setFill(Color.RED);
+                    shape.setOpacity(1);
                 }
             });
             return cell;
@@ -173,6 +206,9 @@ public class Controller {
                 scene.setCursor(Cursor.DEFAULT);
             }
         });
+
+        colorPicker.setValue(Configuration.getMainColor());
+        colorPicker.setOnAction(event -> Configuration.setMainColor(colorPicker.getValue()));
     }
 
     static class ShapeCell extends ListCell<Shape> {
@@ -233,6 +269,11 @@ public class Controller {
 
     @FXML
     public void exportShapes() {
+        restoreSelectedShapeProperties();
+        restoreHoveredShapeProperties();
+        selectedShape = null;
+        hoveredShape = null;
+
         Response response = xmlFileManager.saveShapes(addedShapes, "shapes.dat");
         if (response.success) {
             Alert alert = new Alert(Alert.AlertType.INFORMATION);
@@ -375,12 +416,31 @@ public class Controller {
         currentDrawer = polygonDrawer;
     }
 
-    @FXML
-    public void setHandActive() {
-        if (currentDrawer != null)
-            currentDrawer.stopDrawing();
-        Scene scene = borderPane.getScene();
-        scene.setCursor(Cursor.HAND);
-        currentDrawer = null;
+//    @FXML
+//    public void setHandActive() {
+//        if (currentDrawer != null)
+//            currentDrawer.stopDrawing();
+//        Scene scene = borderPane.getScene();
+//        scene.setCursor(Cursor.HAND);
+//        currentDrawer = null;
+//    }
+
+    private void restoreSelectedShapeProperties() {
+        if (selectedShape != null) {
+            if (selectedShape.equals(hoveredShape)) {
+                selectedShape.setFill(hoveredShapeColor);
+                selectedShape.setOpacity(hoveredShapeOpacity);
+            } else {
+                selectedShape.setFill(selectedShapeColor);
+                selectedShape.setOpacity(selectedShapeOpacity);
+            }
+        }
+    }
+
+    private void restoreHoveredShapeProperties() {
+        if (hoveredShape != null && !hoveredShape.equals(selectedShape)) {
+            hoveredShape.setFill(hoveredShapeColor);
+            hoveredShape.setOpacity(hoveredShapeOpacity);
+        }
     }
 }

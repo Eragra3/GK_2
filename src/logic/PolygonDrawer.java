@@ -87,9 +87,9 @@ public class PolygonDrawer implements Drawer {
 
     private Polygon getShape() {
         Polygon shape = new Polygon();
-        shape.setFill(Drawer.mainColor);
+        shape.setFill(Configuration.getMainColor());
         shape.setId("Polygon " + String.valueOf(idCounter++));
-        shape.setOpacity(shapeOpacity);
+        shape.setOpacity(Configuration.getShapeOpacity());
         shape.setStroke(Color.BLACK);
         return shape;
     }

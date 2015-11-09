@@ -22,24 +22,24 @@
                 </menus>
             </MenuBar>
             <HBox alignment="center" spacing="10">
-                <Button fx:id="hand" text="Hand" onMouseClicked="#setHandActive"></Button>
+                <!--<Button fx:id="hand" text="Hand" onMouseClicked="#setHandActive"></Button>-->
                 <Button fx:id="ellipsis" text="Ellipsis" onMouseClicked="#startDrawingEllipsis"></Button>
                 <Button fx:id="rectangle" text="Rectangle" onMouseClicked="#startDrawingRectangle"></Button>
                 <Button fx:id="polygon" text="Polygon" onMouseClicked="#startDrawingPolygon"></Button>
+                <ColorPicker fx:id="colorPicker"></ColorPicker>
             </HBox>
         </VBox>
     </top>
     <left></left>
     <right>
-        <ListView fx:id="listView" ></ListView>
+        <ListView fx:id="listView"></ListView>
     </right>
     <center>
         <ScrollPane fx:id="scrollPane" onMousePressed="#startPanning" onMouseReleased="#stopPanning">
             <content>
                 <Group>
                     <Pane fx:id="canvasWrapper">
-                        <ImageView fx:id="imageView" preserveRatio="true"
-                                   pickOnBounds="true"></ImageView>
+                        <ImageView fx:id="imageView" preserveRatio="true" pickOnBounds="true"></ImageView>
                         <Pane fx:id="canvas"></Pane>
                     </Pane>
                 </Group>

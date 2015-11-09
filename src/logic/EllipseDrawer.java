@@ -81,9 +81,9 @@ public class EllipseDrawer implements Drawer {
 
     private Ellipse getShape() {
         Ellipse shape = new Ellipse();
-        shape.setFill(Drawer.mainColor);
+        shape.setFill(Configuration.getMainColor());
         shape.setId("Ellipse " + String.valueOf(idCounter++));
-        shape.setOpacity(shapeOpacity);
+        shape.setOpacity(Configuration.getShapeOpacity());
         shape.setStroke(Color.BLACK);
         return shape;
     }
