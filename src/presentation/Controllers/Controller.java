@@ -12,6 +12,7 @@ import javafx.collections.ObservableList;
 import javafx.embed.swing.SwingFXUtils;
 import javafx.fxml.FXML;
 import javafx.geometry.Bounds;
+import javafx.geometry.Point2D;
 import javafx.scene.Cursor;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
@@ -22,6 +23,7 @@ import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
 import javafx.scene.paint.Paint;
+import javafx.scene.shape.Rectangle;
 import javafx.scene.shape.Shape;
 import javafx.scene.transform.Scale;
 import javafx.scene.transform.Transform;
@@ -81,6 +83,13 @@ public class Controller {
     private Shape hoveredShape;
     private Paint hoveredShapeColor;
     private double hoveredShapeOpacity;
+
+    //editing
+    private boolean editing;
+    private Point2D editingPoint;
+    private double initX;
+    private double initY;
+    private String pos;
 
     public Controller() {
     }
@@ -201,9 +210,96 @@ public class Controller {
 
         borderPane.addEventFilter(KeyEvent.KEY_PRESSED, event -> {
             if (event.getCode() == KeyCode.ESCAPE) {
-                if (currentDrawer != null)
+                if (currentDrawer != null) {
                     currentDrawer.stopDrawing();
+                    currentDrawer = null;
+                }
                 scene.setCursor(Cursor.DEFAULT);
+            }
+        });
+        canvas.addEventFilter(MouseEvent.ANY, event -> {
+            if (currentDrawer == null && event.getButton() != MouseButton.MIDDLE) {
+                if (event.getEventType() == MouseEvent.MOUSE_PRESSED && selectedShape != null) {
+                    if (selectedShape instanceof Rectangle) {
+                        Rectangle r = (Rectangle) selectedShape;
+                        Point2D upperLeft = new Point2D(r.getX(), r.getY());
+                        Point2D upperRight = new Point2D(r.getX() + r.getWidth(), r.getY());
+                        Point2D lowerLeft = new Point2D(r.getX(), r.getY() + r.getHeight());
+                        Point2D lowerRight = new Point2D(r.getX() + r.getWidth(), r.getY() + r.getHeight());
+                        Point2D mouse = new Point2D(event.getX(), event.getY());
+
+                        if (mouse.distance(upperLeft) < 4) {
+                            editing = true;
+                            editingPoint = upperLeft;
+                            pos = "ul";
+                        } else if (mouse.distance(upperRight) < 4) {
+                            editing = true;
+                            editingPoint = upperRight;
+                            pos = "ur";
+                        } else if (mouse.distance(lowerLeft) < 4) {
+                            editing = true;
+                            editingPoint = lowerLeft;
+                            pos = "ll";
+                        } else if (mouse.distance(lowerRight) < 4) {
+                            editing = true;
+                            editingPoint = lowerRight;
+                            pos = "lr";
+                        }
+                        if (editingPoint != null) {
+                            initX = upperLeft.getX();
+                            initY = upperLeft.getY();
+                        }
+                        event.consume();
+                    }
+                } else if (event.getEventType() == MouseEvent.MOUSE_DRAGGED && editing) {
+                    Rectangle r = (Rectangle) selectedShape;
+                    double mouseX = event.getX();
+                    double mouseY = event.getY();
+
+                    if (pos.equals("lr")) {
+                        if (mouseX < initX) {
+                            r.setX(mouseX);
+                        }
+                        r.setWidth(Math.abs(initX - mouseX));
+                        if (mouseY < initY) {
+                            r.setY(mouseY);
+                        }
+                        r.setHeight(Math.abs(initY - mouseY));
+                    } else if (pos.equals("ul")) {
+                        if (mouseX < r.getX()) {
+                            r.setWidth(r.getWidth() + Math.abs(r.getX() - mouseX));
+                        } else {
+                            r.setWidth(r.getWidth() - Math.abs(r.getX() - mouseX));
+                        }
+                        if (mouseY < r.getY()) {
+                            r.setHeight(r.getHeight() + Math.abs(r.getY() - mouseY));
+                        } else {
+                            r.setHeight(r.getHeight() - Math.abs(r.getY() - mouseY));
+                        }
+                        r.setX(mouseX);
+                        r.setY(mouseY);
+                    } else if (pos.equals("ur")) {
+                        if (mouseY < r.getY()) {
+                            r.setHeight(r.getHeight() + Math.abs(mouseY - r.getY()));
+                        } else {
+                            r.setHeight(r.getHeight() - Math.abs(mouseY - r.getY()));
+                        }
+                        r.setWidth(Math.abs(mouseX - r.getX()));
+                        r.setY(mouseY);
+                    } else if (pos.equals("ll")) {
+                        r.setHeight(mouseY - r.getY());
+                        if (mouseX < r.getX()) {
+                            r.setWidth(r.getWidth() + Math.abs(r.getX() - mouseX));
+                        } else {
+                            r.setWidth(r.getWidth() - Math.abs(r.getX() - mouseX));
+                        }
+                        r.setX(mouseX);
+                    }
+                    event.consume();
+                } else if (event.getEventType() == MouseEvent.MOUSE_RELEASED) {
+                    editing = false;
+                    event.consume();
+                }
             }
         });
 
@@ -341,7 +437,7 @@ public class Controller {
             else
                 scale *= delta;
 
-            scale = clamp(scale, MIN_SCALE, MAX_SCALE);
+            scale = Helpers.clamp(scale, MIN_SCALE, MAX_SCALE);
 
             imageView.getTransforms().add(Transform.scale(scale, scale));
 //        imageView.setScaleX(scale);
@@ -369,15 +465,6 @@ public class Controller {
         }
     }
 
-    public static double clamp(double value, double min, double max) {
-        if (Double.compare(value, min) < 0)
-            return min;
-
-        if (Double.compare(value, max) > 0)
-            return max;
-
-        return value;
-    }
 
     private void resetImageView(ImageView view) {
         view.setTranslateX(0);

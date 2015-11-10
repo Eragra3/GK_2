@@ -7,7 +7,7 @@
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
-    <orderEntry type="library" name="easybind-1.0.3-javadoc" level="project" />
     <orderEntry type="library" name="jackson-all-1.9.0" level="project" />
+    <orderEntry type="library" name="org.fxmisc.easybind:easybind:1.0.3" level="project" />
   </component>
 </module>

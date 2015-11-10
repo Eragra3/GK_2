@@ -14,5 +14,14 @@ public interface Helpers {
                 av == null || bv == null ? Double.NaN :
                         av.doubleValue() / bv.doubleValue());
     }
+    public static double clamp(double value, double min, double max) {
+        if (Double.compare(value, min) < 0)
+            return min;
+
+        if (Double.compare(value, max) > 0)
+            return max;
+
+        return value;
+    }
 }
 
